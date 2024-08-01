@@ -13,22 +13,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Fetch JSON file
+    - name: Fetch and split JSON file
       run: |
-        wget -O mainnet.json https://api.raydium.io/v2/sdk/liquidity/mainnet.json \
+        wget -O - https://api.raydium.io/v2/sdk/liquidity/mainnet.json \
           --header="User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1" \
           --timeout=600 \
           --tries=3 \
-          --waitretry=5
+          --waitretry=5 |
+        jq -c '.[]' |
+        split -b 95m - mainnet_ --additional-suffix=.json
       timeout-minutes: 10
-
-    - name: Split JSON file
-      run: |
-        max_size=95000000 # 95 MB in bytes
-        file_prefix="mainnet"
-        file_suffix=1
-
-        jq -c '.[]' mainnet.json | split -b $max_size - "${file_prefix}_" --additional-suffix=".json" --numeric-suffixes="${file_suffix}"
 
     - name: Commit and push changes
       run: |
